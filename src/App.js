@@ -1,8 +1,16 @@
-import { Card, Col, Row, Image, Tag, Spin } from 'antd';
 import React, {Component} from 'react';
-import { LoadingOutlined } from '@ant-design/icons';
 import FilmList from './components/film-list'
 import './App.css';
+import { Offline, Online } from "react-detect-offline";
+
+import { Card, Col, Row, Image, Tag, Spin, Input } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+
+const { Search } = Input;
+
+
+
+
 
 const antIcon = (
     <LoadingOutlined
@@ -16,49 +24,73 @@ const antIcon = (
 export default class App extends Component{
 
     state ={
-        searchInput:'return',
-        filmData:[]
+        searchInput:'',
+        filmData:[],
+        loading: false
     }
     _API_KEY = '3bc3826aac77d61a282436f0813430f4'
-    async getKeywordData() {
-        const url=`https://api.themoviedb.org/3/search/keyword?api_key=${this._API_KEY}&query=${this.state.searchInput}`
-        const res = await fetch(url)
-        return await res.json()
-    }
 
+    async getKeywordData (){
+        const url = `https://api.themoviedb.org/3/search/keyword?api_key=${this._API_KEY}&query=${this.state.searchInput}`
+        const keywordData = await fetch(url)
+        return await keywordData.json()
+    }
     async getFilmArray (){
-        const data = await this.getKeywordData()
-        const filmArray = await fetch(`https://api.themoviedb.org/3/keyword/${data.results[0].id}/movies?api_key=${this._API_KEY}`)
-        const films = await filmArray.json()
+        const res = await this.getKeywordData()
+        const url = `https://api.themoviedb.org/3/keyword/${res.results[0].id}/movies?api_key=${this._API_KEY}&`
+        const filmArray = await fetch(url)
+        const res2 = await filmArray.json()
         this.setState(() => {
             return {
-                filmData: films.results
+                filmData: res2.results,
+                loading:false
             }
         })
     }
-    // getFilmData =()=> {
-    //     const data = this.getFilmArray()
-    //     data.then(res=> {
-    //         this.setState(() => {
-    //             return {
-    //                 filmData: res.results
-    //             }
-    //         })
-    //     })
-    //
-    // }
 
-
+    onChange =()=>(e)=>{
+        console.log(e.target.value)
+        this.setState(()=>{
+            return {
+                searchInput: e.target.value,
+                loading: true
+            }
+        })
+        this.getFilmArray()
+        //     .then(res=>{
+        //     this.setState(() => {
+        //         return {
+        //             filmData: res.results,
+        //             loading:false
+        //         }
+        //     })
+        // })
+    }
     render (){
-        console.log(this.state.filmData)
         return (
             <div className="site-card-wrapper">
-                <Spin indicator={antIcon} onClick={this.getFilmArray.bind(this)}/>
-                <Row justify="space-evenly" gutter={[0, 36]}  className="site-card-row">
+                <Online>
+                    <input
+                        type="search"
+                        placeholder="input search text"
+                        onChange={this.onChange.call(this)}
+                        value={this.state.searchInput}
+                    />
+                    <div className="films">
+                        {this.state.loading
+                            ? <div className="films__spinner" >
+                                <Spin indicator={antIcon}/>
+                            </div>
+                            :
+                            <FilmList
+                                filmData={this.state.filmData}
+                                api_key={this._API_KEY}
+                            />
+                        }
+                    </div>
 
-                    <FilmList filmData={this.state.filmData} />
-
-                </Row>
+                </Online>
+                <Offline>Only shown offline (surprise!)</Offline>
             </div>
         )
     }

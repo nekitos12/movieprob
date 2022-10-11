@@ -1,0 +1,33 @@
+.film-card {
+    display: flex;
+    height:278px
+}
+
+.film-card__descr {
+    padding: 12px 20px 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 7px
+}
+
+
+
+.film-card__title {
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 28px;
+}
+
+.film-card__date{
+    color: #827E7E;
+}
+
+.film-card__overview {
+    font-size: 12px;
+    line-height: 22px;
+    overflow: hidden;
+}
+
+.ant-card-body {
+    padding: 0px !important;
+}
