@@ -78,7 +78,6 @@ export default class FilmWrapper extends Component {
                 return {
                     filmData: res2,
                     alert: null,
-                    currentPage: 1
                 }
             })
         }
