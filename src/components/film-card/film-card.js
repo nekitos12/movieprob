@@ -1,31 +1,93 @@
-import {Card, Image, Tag} from "antd";
+import {Card, Rate, Tag} from "antd";
 import React from "react";
 import './film-card.css'
 
-function FilmCard (props){
-    const {id, original_title, overview, poster_path, release_date} = props.film
-    const getCutText = (text, maxLength = 150)=>{
-        const spaceBeforeCut = text.indexOf(' ', maxLength)
-        return text.slice(0, spaceBeforeCut) + '...'
+export default class FilmCard extends React.Component{
+    state ={
+        genres: []
     }
-    const withoutPoster = `https://www.google.com/search?q=react&rlz=1C1GGRV_enRU1011RU1012&sxsrf=ALiCzsaN71Jqo61EymPrK-LMvqGeZNTWKQ:1665576636945&tbm=isch&source=iu&ictx=1&vet=1&fir=HD3eXsrstv-_cM%252CuDQPDMqXXQYhqM%252C%252Fm%252F012l1vxv%253BviJ6CsTiT3pOsM%252C0-u43g85FJxxkM%252C_%253Ba0Y2JqcINbfO3M%252Cmr-PmlexLH5v6M%252C_%253BHkHPwN1RaGFlsM%252CWCcKjTXzHDB6aM%252C_%253BfcxeMDIYnT6N2M%252CLBjQh0D3VXjoEM%252C_&usg=AI4_-kQvZLBUkfy7KVRjgw34iS5gdsQQZg&sa=X&ved=2ahUKEwje6Km-1Nr6AhVyx4sKHeSDA8AQ_B16BAhZEAE#imgrc=HD3eXsrstv-_cM`
 
-    const overviewText = getCutText(overview)
+    getCutText = (text, maxLength = 150)=>{
+        const spaceBeforeCut = text.indexOf(' ', maxLength)
+        return spaceBeforeCut > 0 ? text.slice(0, spaceBeforeCut) + '...' : text
+    }
+    componentDidMount() {
 
-    return (
-        <div className="film-card films__card">
+        this.getGenres()
+    }
 
-            <img className="film-card__poster" src={poster_path ?`https://image.tmdb.org/t/p/w185/${poster_path}`: withoutPoster}/>
+    async getGenres (){
+        const { genre_ids } = this.props.film
+        const url = `
+https://api.themoviedb.org/3/genre/movie/list?api_key=3bc3826aac77d61a282436f0813430f4`
+        const keywordData = await fetch(url)
+        const arr = await keywordData.json()
+        arr.genres.forEach(elem => {
+            if (genre_ids.some(id => id === elem.id) && !this.state.genres.some(genre=> genre===elem.name)) {
+                this.setState(({genres})=>{
+                    return {
+                        genres: [...genres, elem.name]
+                    }
+                })
+            }
+        })
+    }
 
-            <Card className="film-card__descr">
-                <p className="film-card__title">{original_title}</p>
-                <p className="film-card__date">{release_date}</p>
+    async getRate (id, rate){
+        await this.props.postFilmRate(id, rate)
+        const url = `https://api.themoviedb.org/3/guest_session/${this.props.guest_session_id}/rated/movies?api_key=${this.props.apiKey}`
+        const res = await fetch(url)
+        const response = await res.json()
+        console.log(response)
+        const ratedFilm = response.results.find(elem=> elem.id === id)
+        console.log(response.results[0])
+        console.log(ratedFilm)
+        this.setState(()=>{
+            return {
+                rate: ratedFilm?.rating || ''
 
-                <p className="film-card__overview">{overviewText}</p>
-            </Card>
-        </div>
+            }
+        })
+    }
 
-    )
+    render (){
+        const { original_title, overview, poster_path, release_date, id} = this.props.film
+        const withoutPoster = ``
+
+        const overviewText = this.getCutText(overview)
+        const titleText = this.getCutText(original_title, 25)
+        const genreData = this.state.genres.map(genres => {
+            return (
+                <Tag className=" ">{genres}</Tag>
+            )
+        })
+        return (
+
+            <div className="film-card films__card">
+
+                <img className="film-card__poster" src={poster_path ?`https://image.tmdb.org/t/p/w185/${poster_path}`: withoutPoster}/>
+
+                <Card className="film-card__descr">
+                    <p className="film-card__title">{titleText}</p>
+                    <p className="film-card__date">{release_date}</p>
+                    {genreData}
+                    <p className="film-card__overview">{overviewText}</p>
+                    <Rate allowHalf count={10} className="film-card__rate" onChange={(value)=>this.getRate(id, value)}/>
+                    <div className="film-card__circle-rate circle-rate">
+                        <span className="circle-rate__rate">{this.state.rate}</span>
+                        <svg height="30" width="30" className="circle-rate__circle">
+                            <circle  r="14" stroke="black" cx="15" cy="15" strokeWidth="2" fill="none" />
+                        </svg>
+
+                    </div>
+
+                </Card>
+
+
+            </div>
+
+        )
+    }
+
 }
 
-export default FilmCard
